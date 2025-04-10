@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Specimen Size Calculator</title>
+    <link rel="stylesheet" href="static/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Specimen Size Calculator</h1>
+        
+        <div class="form-group">
+            <label for="username">👤 Username:</label>
+            <input type="text" id="username" required placeholder="Enter your username">
+        </div>
+        
+        <div class="form-group">
+            <label for="microscope_size">🔍 Microscope Size (mm):</label>
+            <input type="number" id="microscope_size" step="0.01" required placeholder="Enter microscope size">
+        </div>
+        
+        <div class="form-group">
+            <label for="magnification">🔎 Magnification:</label>
+            <input type="number" id="magnification" required placeholder="Enter magnification coefficient">
+        </div>
+        
+        <button onclick="calculate()">Calculate Size</button>
+        
+        <div id="result" class="result"></div>
+
+        <div class="controls">
+            <button onclick="exportData()" class="export-btn">Export Data (CSV)</button>
+            <button onclick="clearData()" class="clear-btn">Clear History</button>
+        </div>
+        
+        <h2>Recent Measurements</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Microscope Size (mm)</th>
+                    <th>Actual Size (µm)</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody id="measurements"></tbody>
+        </table>
+
+        <div class="chart-container">
+            <canvas id="measurementsChart"></canvas>
+        </div>
+    </div>
+    <script src="static/js/script.js"></script>
+</body>
+</html>
