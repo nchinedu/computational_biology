@@ -1,9 +1,15 @@
 let measurementsChart;
 
-// Remove the constants and use CONFIG object
+// Add this function near the top with other Gist operations
 async function saveMeasurementToGist(measurement) {
     const measurements = await loadMeasurementsFromGist();
-    measurements.unshift(measurement);
+    if (Array.isArray(measurement)) {
+        // Handle clearing data case
+        measurements.length = 0;
+    } else {
+        // Handle new measurement case
+        measurements.unshift(measurement);
+    }
     const limitedMeasurements = measurements.slice(0, 5);
     
     const content = JSON.stringify(limitedMeasurements, null, 2);
@@ -30,9 +36,9 @@ async function saveMeasurementToGist(measurement) {
 
 async function loadMeasurementsFromGist() {
     try {
-        const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        const response = await fetch(`https://api.github.com/gists/${CONFIG.GIST_ID}`, {
             headers: {
-                'Authorization': `token ${GITHUB_TOKEN}`
+                'Authorization': `token ${CONFIG.GITHUB_TOKEN}`
             }
         });
         const data = await response.json();
@@ -91,8 +97,41 @@ async function updateChart() {
     });
 }
 
-function exportData() {
-    const measurements = JSON.parse(localStorage.getItem('measurements') || '[]');
+// Make calculate function globally available
+window.calculate = async function() {
+    const username = document.getElementById('username').value;
+    const microscope_size = parseFloat(document.getElementById('microscope_size').value);
+    const magnification = parseInt(document.getElementById('magnification').value);
+
+    if (!username || !microscope_size || !magnification) {
+        alert('Please fill in all fields');
+        return;
+    }
+
+    const actual_size = (microscope_size / magnification) * 1000;
+    
+    const measurement = {
+        username,
+        microscope_size,
+        actual_size,
+        date_added: new Date().toISOString()
+    };
+
+    try {
+        await saveMeasurementToGist(measurement);
+        document.getElementById('result').innerHTML = 
+            `✨ Original size of specimen: <strong>${actual_size.toFixed(2)} µm</strong>`;
+        await updateMeasurementTable();
+        await updateChart();
+    } catch (error) {
+        console.error('Error saving measurement:', error);
+        alert('Error saving measurement. Please try again.');
+    }
+};
+
+// Make other functions globally available
+window.exportData = async function() {
+    const measurements = await loadMeasurementsFromGist();
     const csv = [
         ['Username', 'Microscope Size (mm)', 'Actual Size (µm)', 'Date'],
         ...measurements.map(m => [
@@ -110,18 +149,27 @@ function exportData() {
     a.download = 'specimen_measurements.csv';
     a.click();
     window.URL.revokeObjectURL(url);
-}
+};
 
-function clearData() {
+window.clearData = async function() {
     if (confirm('Are you sure you want to clear all measurements?')) {
-        localStorage.removeItem('measurements');
-        updateMeasurementTable();
-        updateChart();
-        document.getElementById('result').textContent = '';
+        try {
+            await saveMeasurementToGist([]);
+            await updateMeasurementTable();
+            await updateChart();
+            document.getElementById('result').textContent = '';
+        } catch (error) {
+            console.error('Error clearing data:', error);
+            alert('Error clearing data. Please try again.');
+        }
     }
-}
+};
  
 document.addEventListener('DOMContentLoaded', async () => {
+    if (typeof CONFIG === 'undefined') {
+        console.error('Configuration not loaded. Please check config.js');
+        return;
+    }
     await updateMeasurementTable();
     await updateChart();
 });
