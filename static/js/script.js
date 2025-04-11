@@ -1,38 +1,52 @@
 let measurementsChart;
 
-function calculate() {
-    const username = document.getElementById('username').value;
-    const microscope_size = parseFloat(document.getElementById('microscope_size').value);
-    const magnification = parseInt(document.getElementById('magnification').value);
-
-    if (!username || !microscope_size || !magnification) {
-        alert('Please fill in all fields');
-        return;
-    }
-
-    const actual_size = (microscope_size / magnification) * 1000;
-    
-    const measurement = {
-        username,
-        microscope_size,
-        actual_size,
-        date_added: new Date().toISOString()
-    };
-
-    let measurements = JSON.parse(localStorage.getItem('measurements') || '[]');
+// Remove the constants and use CONFIG object
+async function saveMeasurementToGist(measurement) {
+    const measurements = await loadMeasurementsFromGist();
     measurements.unshift(measurement);
-    measurements = measurements.slice(0, 5);
-    localStorage.setItem('measurements', JSON.stringify(measurements));
+    const limitedMeasurements = measurements.slice(0, 5);
+    
+    const content = JSON.stringify(limitedMeasurements, null, 2);
+    
+    const response = await fetch(`https://api.github.com/gists/${CONFIG.GIST_ID}`, {
+        method: 'PATCH',
+        headers: {
+            'Authorization': `token ${CONFIG.GITHUB_TOKEN}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            files: {
+                'measurements.json': {
+                    content: content
+                }
+            }
+        })
+    });
 
-    document.getElementById('result').innerHTML = 
-        `✨ Original size of specimen: <strong>${actual_size.toFixed(2)} µm</strong>`;
-
-    updateMeasurementTable();
-    updateChart();
+    if (!response.ok) {
+        throw new Error('Failed to save measurement');
+    }
 }
 
-function updateMeasurementTable() {
-    const measurements = JSON.parse(localStorage.getItem('measurements') || '[]');
+async function loadMeasurementsFromGist() {
+    try {
+        const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`
+            }
+        });
+        const data = await response.json();
+        const content = data.files['measurements.json'].content;
+        return JSON.parse(content);
+    } catch (error) {
+        console.error('Error loading measurements:', error);
+        return [];
+    }
+}
+
+// Modify updateMeasurementTable to use the new async function
+async function updateMeasurementTable() {
+    const measurements = await loadMeasurementsFromGist();
     const tbody = document.getElementById('measurements');
     tbody.innerHTML = '';
 
@@ -45,8 +59,9 @@ function updateMeasurementTable() {
     });
 }
 
-function updateChart() {
-    const measurements = JSON.parse(localStorage.getItem('measurements') || '[]');
+// Modify updateChart to use the new async function
+async function updateChart() {
+    const measurements = await loadMeasurementsFromGist();
     const ctx = document.getElementById('measurementsChart').getContext('2d');
 
     if (measurementsChart) {
@@ -105,8 +120,8 @@ function clearData() {
         document.getElementById('result').textContent = '';
     }
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    updateMeasurementTable();
-    updateChart();
+ 
+document.addEventListener('DOMContentLoaded', async () => {
+    await updateMeasurementTable();
+    await updateChart();
 });

@@ -4,8 +4,12 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from ttkthemes import ThemedTk
 
+# Add at the top of the file
+from build_exe import resource_path
+
 def setup_database():
-    conn = sqlite3.connect('specimen_records.db')
+    db_path = resource_path('specimen_records.db')
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS specimens (
@@ -20,7 +24,8 @@ def setup_database():
     conn.close()
 
 def save_measurement(username, microscope_size, actual_size):
-    conn = sqlite3.connect('specimen_records.db')
+    db_path = resource_path('specimen_records.db')
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute('''
         INSERT INTO specimens (username, microscope_size, actual_size, date_added)
@@ -144,7 +149,8 @@ class SpecimenCalculator(ThemedTk):
         for item in self.tree.get_children():
             self.tree.delete(item)
             
-        conn = sqlite3.connect('specimen_records.db')
+        db_path = resource_path('specimen_records.db')
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         cursor.execute('''
             SELECT username, microscope_size, actual_size, date_added 
