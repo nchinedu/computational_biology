@@ -1,4 +1,0 @@
-const CONFIG = {
-    GIST_ID: 'YOUR_GIST_ID',
-    GITHUB_TOKEN: 'YOUR_GITHUB_TOKEN'
-};
